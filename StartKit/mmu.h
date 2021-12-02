@@ -1,5 +1,9 @@
-#define FRAMES 256 
-#define FRAME_SIZE 256
+#define PHASE_ONE_FRAMES 256 
+#define PHASE_ONE_FRAME_SIZE 256
+
+#define PHASE_TWO_FRAMES 128 
+#define PHASE_TWO_FRAME_SIZE 128
+
 
 struct pageEntry {
     char frameNumber;
@@ -10,13 +14,13 @@ struct pageEntry {
     char reference; // 1= accessed, 0 = not accessed
 };
 struct logicalAddress {
-    int p; // page number m-n
-    int d; // page offset n
+    char p; // page number m-n
+    char d; // page offset n
 };
 
 struct pageTable{
-    //struct pageEntry[];
-    int t;
+    struct pageEntry[];
+    
 };
 
 struct process {
