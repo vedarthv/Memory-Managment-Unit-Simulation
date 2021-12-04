@@ -26,18 +26,20 @@ struct TLB {
 };
 
 struct Memory{
-    char data[FRAME_SIZE];
+    signed char data[FRAME_SIZE];
 };
 
 
 
-static void innit_Memory(int frames);
-static void innit_PageTable(int frames);
-static void innit_TLB();
+void innit_Memory(int frames);
+void innit_PageTable(int frames);
+void innit_AddressTable(int frames);
+void innit_TLB();
 void dectobin(int n);
 void getp(int n);
 void getd(int n);
-int PageTableAdd(int tempAddress);
-int PageTableGetIdx(int tempAddress);
+int PageTableAdd(int pageNumber, int offset, int count, signed char diskData[]);
+int AddressTableAdd(int tempAddress);
+int PageTableGetFrame(int tempAddress);
 int TLBGetFrame(int pageNum);
 int TLBAdd(int pageNum, int frameNum);
