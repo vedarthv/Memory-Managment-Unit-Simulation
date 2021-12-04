@@ -40,4 +40,4 @@ void getd(int n);
 int PageTableAdd(int tempAddress);
 int PageTableGetIdx(int tempAddress);
 int TLBGetFrame(int pageNum);
-int TLBAddFrame(int idx, int pageNumber, int frameNum);
+int TLBAdd(int pageNum, int frameNum);

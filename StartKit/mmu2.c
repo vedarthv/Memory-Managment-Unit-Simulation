@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
         // 2. IF TLB miss, ask PAGETABLE
         // 3. Print result
         int tempFrame = TLBGetFrame(addresses[i].page);
+        int outF = tempFrame;
         if(tempFrame > -1){
             TLB_HIT++;
             for(int j = 0; j < PageTable_SIZE; j++){
@@ -75,35 +76,21 @@ int main(int argc, char *argv[]) {
             int idx = PageTableGetIdx(addresses[i].page);
             
             if(idx > -1) { // Data in page table, so now add it to TLB.
-                if (tlb_SIZE >= TLB_SIZE){ // TLB ADD CASE 1
-                    //remove TLB FIFO 
-                    for (int l = 1; l < TLB_SIZE; l++){
-                        tlb[l-1].frameNumber = tlb[l].frameNumber;
-                        tlb[l-1].pageNumber = tlb[l].pageNumber;
-                        if(l == TLB_SIZE - 1){ // add entry at the end
-                            tlb[l].frameNumber = idx;
-                            tlb[l].pageNumber = addresses[i].page;
-                        }
-                    }
-                }
-                else{   //TLB ADD CASE 2
-                    tlb[tlb_SIZE].frameNumber = idx;
-                    tlb[tlb_SIZE].pageNumber = addresses[i].page;
-                    tlb_SIZE++;
-                }
+                TLBAdd(addresses[i].page, idx);
+                
                 for(int j = 0; j < PageTable_SIZE; j++){
                     if(addresses[i].page == pageTable[j].p){
                         pageTable[j].lastUse = i + 1;
                     }
                 }
                 PageTable_HIT++;
+                outF = idx;
 
             }
             else { // Data not in page table, need to ask BACKING STORE for Frame/data. PAGEFAULT
                 // fetch data from backing store and add it to page table
                 // load back -> add page table
-
-
+                PageTable_MISS++;
                 //1. get data from backing store
                 signed char data[FRAME_SIZE];
                 fseek(backingStore, addresses[i].page * FRAME_SIZE, SEEK_SET);
@@ -112,13 +99,16 @@ int main(int argc, char *argv[]) {
                 //2. add data into the page table
                 //tempFrame = 
                 int tempidx = PageTableGetIdx(addresses[i].page);
+                outF = tempidx;
 
+                // PAGE TABLE ADD
                 if(PageTable_SIZE < PHASE_INDICATOR){
                     // insert page
                     pageTable[PageTable_SIZE].p = addresses[i].page;
                     pageTable[PageTable_SIZE].lastUse = i + 1;
                     strncpy(memory[PageTable_SIZE].data, data, FRAME_SIZE);
                     PageTable_SIZE++;
+                    Memory_SIZE++;
 
                 }
                 else{ // swap least recently used value
@@ -135,28 +125,17 @@ int main(int argc, char *argv[]) {
                     strncpy(memory[lastMin].data, data, FRAME_SIZE);
 
                     //  now update tlb
-
-                    
-
-
-                    
+                    TLBAdd(addresses[i].page, lastMin);
+                    outF = lastMin;
                 }
-                
-
-
-
-                PageTable_MISS++;
+            
             }
-
-
-
-
         }
-        printf("Index: %d, address: %d, Page: %d, Offset: %d\n", i,  pageTable[i].virtualAddress, pageTable[i].p, pageTable[i].d);
+        fprintf("%d,%d,%d\n", addresses[i].virtualAddress, outF * FRAME_SIZE + addresses[i].offset, memory[outF].data[addresses[i].offset]);
     }
 
     fclose(addressFile);
-    //fclose(backingStore);
+    fclose(backingStore);
     //fclose(outputFile);
     
     return 0;
@@ -226,21 +205,21 @@ int TLBGetFrame(int pageNum){
     return -1;
 }
 
-int TLBAddFrame(int idx, int pageNumber, int frameNumber){
+int TLBAdd(int pageNum, int frameNum){
     if (tlb_SIZE >= TLB_SIZE){ // TLB ADD CASE 1
         //remove TLB FIFO 
         for (int l = 1; l < TLB_SIZE; l++){
             tlb[l-1].frameNumber = tlb[l].frameNumber;
             tlb[l-1].pageNumber = tlb[l].pageNumber;
             if(l == TLB_SIZE - 1){ // add entry at the end
-                tlb[l].frameNumber = idx;
-                tlb[l].pageNumber = pageNumber;
+                tlb[l].frameNumber = frameNum;
+                tlb[l].pageNumber = pageNum;
             }
         }
     }
     else{   //TLB ADD CASE 2
-        tlb[tlb_SIZE].frameNumber = idx;
-        tlb[tlb_SIZE].pageNumber = addresses[i].page;
+        tlb[tlb_SIZE].frameNumber = frameNum;
+        tlb[tlb_SIZE].pageNumber = pageNum;
         tlb_SIZE++;
     }
     return 1;
@@ -269,10 +248,14 @@ void dectobin(int n){
     for (c = 15; c >= 0; c--){ // c value was originally 31, but we will be using 15, 2^16 = 65536, 8+8 bits.
         k = n >> c;
 
-        if (k & 1)
+        if (k & 1){
             printf("1");
-        else
-            printf("0");
+        }
+            
+        else{
+             printf("0");
+        }
+           
     }
 }
 
