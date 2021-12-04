@@ -26,12 +26,12 @@ static int PageTable_HIT;
 int main(int argc, char *argv[]) {
     
     FILE *addressFile;
-    //FILE *backingStore;
+    FILE *backingStore;
     //FILE *outputFile;
     
 
     addressFile = fopen(argv[3],"r");
-    //backingStore = fopen(argv[2], "rb"); 
+    backingStore = fopen(argv[2], "rb"); 
     //outputFile = fopen("output.csv", "w");
     PHASE_INDICATOR = atoi(argv[1]);
 
@@ -102,6 +102,48 @@ int main(int argc, char *argv[]) {
             else { // Data not in page table, need to ask BACKING STORE for Frame/data. PAGEFAULT
                 // fetch data from backing store and add it to page table
                 // load back -> add page table
+
+
+                //1. get data from backing store
+                signed char data[FRAME_SIZE];
+                fseek(backingStore, addresses[i].page * FRAME_SIZE, SEEK_SET);
+                fread(data, sizeof(char), FRAME_SIZE, backingStore);
+
+                //2. add data into the page table
+                //tempFrame = 
+                int tempidx = PageTableGetIdx(addresses[i].page);
+
+                if(PageTable_SIZE < PHASE_INDICATOR){
+                    // insert page
+                    pageTable[PageTable_SIZE].p = addresses[i].page;
+                    pageTable[PageTable_SIZE].lastUse = i + 1;
+                    strncpy(memory[PageTable_SIZE].data, data, FRAME_SIZE);
+                    PageTable_SIZE++;
+
+                }
+                else{ // swap least recently used value
+                    int m = 100000;
+                    int lastMin = 100000;
+                    for(int r = 0; r < PHASE_INDICATOR; r++){
+                        if(m >= pageTable[r].lastUse){
+                            m = pageTable[r].lastUse;
+                            lastMin = r;
+                        }
+                    }
+                    pageTable[lastMin].p = addresses[i].page;
+                    pageTable[lastMin].lastUse = i + 1;
+                    strncpy(memory[lastMin].data, data, FRAME_SIZE);
+
+                    //  now update tlb
+
+                    
+
+
+                    
+                }
+                
+
+
 
                 PageTable_MISS++;
             }
@@ -185,8 +227,23 @@ int TLBGetFrame(int pageNum){
 }
 
 int TLBAddFrame(int idx, int pageNumber, int frameNumber){
-    if(TLBGetFrame(id))
-
+    if (tlb_SIZE >= TLB_SIZE){ // TLB ADD CASE 1
+        //remove TLB FIFO 
+        for (int l = 1; l < TLB_SIZE; l++){
+            tlb[l-1].frameNumber = tlb[l].frameNumber;
+            tlb[l-1].pageNumber = tlb[l].pageNumber;
+            if(l == TLB_SIZE - 1){ // add entry at the end
+                tlb[l].frameNumber = idx;
+                tlb[l].pageNumber = pageNumber;
+            }
+        }
+    }
+    else{   //TLB ADD CASE 2
+        tlb[tlb_SIZE].frameNumber = idx;
+        tlb[tlb_SIZE].pageNumber = addresses[i].page;
+        tlb_SIZE++;
+    }
+    return 1;
 }
 
 
