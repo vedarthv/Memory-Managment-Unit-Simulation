@@ -4,6 +4,202 @@
 #include <math.h>
 #include "mmu.h"
 
+static int PHASE_INDICATOR;
+static struct AddressTable addresses[FRAME_SIZE];
+static struct PageTable pageTable[FRAME_SIZE];
+static int AddressTable_SIZE;
+static int PageTable_SIZE;
+static struct Memory memory[FRAME_SIZE]; 
+static int Memory_SIZE;
+static struct TLB tlb [TLB_SIZE]; // TLB = [Page Number][Frame Number] 
+static int tlb_SIZE;
+
+// Statistic Variables
+static int TLB_MISS;
+static int TLB_HIT;
+static int PageTable_MISS;
+static int PageTable_HIT;
+
+
+
+
+int main(int argc, char *argv[]) {
+    
+    FILE *addressFile;
+    //FILE *backingStore;
+    //FILE *outputFile;
+    
+
+    addressFile = fopen(argv[3],"r");
+    //backingStore = fopen(argv[2], "rb"); 
+    //outputFile = fopen("output.csv", "w");
+    PHASE_INDICATOR = atoi(argv[1]);
+
+
+    innit_Memory(PHASE_INDICATOR);
+    innit_PageTable(PHASE_INDICATOR);
+    innit_TLB();
+    innit_AddressTable(PHASE_INDICATOR);
+    //char frame[PHASE_INDICATOR];
+    char address [LOGICAL_ADDRESS_BITS] = {'\0'};
+    //char backingStoreFrame[FRAME_SIZE];
+
+    int idx = 0;
+    while (fgets(address,LOGICAL_ADDRESS_BITS, addressFile) != NULL) {
+        int tempAddress = atoi(address);
+        printf("%d\n", tempAddress);
+        AddressTableAdd(tempAddress);
+        //PageTableAdd(tempAddress);
+    }
+
+    printf("---------------------------\n");
+    printf("Size: %d\n", PageTable_SIZE);
+
+    for(int i = 0; i < PHASE_INDICATOR; i++){
+
+        // 1. Search TLB
+        // 2. IF TLB miss, ask PAGETABLE
+        // 3. Print result
+        int tempFrame = TLBGetFrame(addresses[i].page);
+        if(tempFrame > -1){
+            TLB_HIT++;
+            for(int j = 0; j < PageTable_SIZE; j++){
+                if(tempFrame == pageTable[j].p){
+                    pageTable[j].lastUse = i + 1;
+                }
+            }
+        }
+        else { // TBL miss, use search table
+            TLB_MISS++;
+            // Search page table
+            int idx = PageTableGetIdx(addresses[i].page);
+            
+            if(idx > -1) { // Data in page table, so now add it to TLB.
+                if (tlb_SIZE >= TLB_SIZE){
+                    //remove TLB FIFO 
+                    for (int l = 1; l < TLB_SIZE; l++){
+                        tlb[l-1].frameNumber = tlb[l].frameNumber;
+                        tlb[l-1].pageNumber = tlb[l].pageNumber;
+                        if(l == TLB_SIZE - 1){
+                            tlb[l].frameNumber = idx;
+                            tlb[l].pageNumber = addresses[i].page;
+                        }
+                    }
+                    
+                }
+                else{   
+                    tlb[tlb_SIZE].frameNumber = idx;
+                    tlb[tlb_SIZE].pageNumber = addresses[i].page;
+                    tlb_SIZE++;
+                }
+                
+
+            }
+            else { // Data not in page table, need to ask BACKING STORE for Frame/data.
+
+            }
+
+
+
+
+        }
+        printf("Index: %d, address: %d, Page: %d, Offset: %d\n", i,  pageTable[i].virtualAddress, pageTable[i].p, pageTable[i].d);
+    }
+
+    fclose(addressFile);
+    //fclose(backingStore);
+    //fclose(outputFile);
+    
+    return 0;
+}
+
+
+static void innit_Memory(int frames) {
+    for(int i = 0; i < frames; i++){
+        strncpy(memory[i].data, "NULL", FRAME_SIZE);
+    }
+}
+
+static void innit_PageTable(int frames) {
+    for(int i = 0; i < frames; i++){
+        pageTable[i].d = -1; 
+        pageTable[i].p = -1; 
+        pageTable[i].virtualAddress = -1;
+        pageTable[i].physicalAddress = -1;
+        pageTable[i].presence = 0;
+        pageTable[i].reference = 0;
+    }
+}
+
+static void innit_AddressTable(int frames) {
+    for(int i = 0; i < frames; i++){
+        addresses[i].offset = -1; 
+        addresses[i].page = -1; 
+        addresses[i].virtualAddress = -1;
+    }
+}
+
+static void innit_TLB() {
+    for(int i = 0; i < TLB_SIZE; i++){
+        tlb[i].frameNumber = -1;
+        tlb[i].pageNumber = -1;
+    } 
+}
+
+int PageTableAdd(int tempAddress){
+    //if(PageTableGet(tempAddress) == -1){
+    //    return 1; // element already exits
+    //}
+    //else{
+    pageTable[PageTable_SIZE].virtualAddress = tempAddress;
+    pageTable[PageTable_SIZE].p = (tempAddress & 65535) >> 8;
+    pageTable[PageTable_SIZE].d = tempAddress & 255;
+    PageTable_SIZE++;
+    return 1; //successful add
+    //}
+}
+
+int PageTableGetIdx(int address){
+    for(int i = 0; i < PageTable_SIZE; i++){
+        if(pageTable[i].p == address){
+            return i;
+        }
+    }
+    return -1;
+}
+
+int TLBGetFrame(int pageNum){
+    for(int i = 0; i < TLB_SIZE; i++){
+        if(tlb[i].pageNumber == pageNum){
+            return tlb[i].frameNumber;
+        }
+    }
+    return -1;
+}
+
+int TLBAddFrame(int idx, int pageNumber, int frameNumber){
+    if(TLBGetFrame(id))
+
+}
+
+
+int AddressTableAdd(int tempAddress){
+    //if(PageTableGet(tempAddress) == -1){
+    //    return 1; // element already exits
+    //}
+    //else{
+        if (AddressTable_SIZE == PHASE_INDICATOR){
+            return -1; // Table is full
+        }
+        else{
+            addresses[AddressTable_SIZE].virtualAddress = tempAddress;
+            addresses[AddressTable_SIZE].page = (tempAddress & 65535) >> 8;
+            addresses[AddressTable_SIZE].offset = tempAddress & 255; 
+            AddressTable_SIZE++;
+            return 1; //successful add
+        }
+    //}
+}
 void dectobin(int n){
     int c,k;
     for (c = 15; c >= 0; c--){ // c value was originally 31, but we will be using 15, 2^16 = 65536, 8+8 bits.
@@ -66,70 +262,3 @@ void getd(int n){
 
     printf("dec: %d, bin: %s", atoi(p), p);
 }
-
-int main(int argc, char *argv[]) {
-    FILE *in;
-    FILE *backingStore;
-    char *temp;
-    char frame[FRAME_SIZE];
-    char num[128];
-    int mem = atoi(argv[1]);
-    unsigned char buff[(FRAMES * FRAME_SIZE)];
-    //printf("mem: %d\n", mem);
-    
-
-    backingStore = fopen(argv[2], "rb"); 
-
-    fread(buff, sizeof(buff), 1, backingStore);
-
-    for(int i = 0; i<(FRAMES * FRAME_SIZE); i++)
-        printf("%x\n", buff[i]); 
-   
-    while (fgets(frame,FRAME_SIZE, backingStore) != NULL) {
-    //    //temp = strdup(frame);
-    //    //name = strsep(&temp,",");
-    //    //priority = atoi(strsep(&temp,","));
-    //    //burst = atoi(strsep(&temp,","));
-
-    //    // add the task to the scheduler's list of tasks
-        //i = 0;
-        //while (i < FRAME_SIZE)
-        //{
-        //    printf("%x", frame[i]);
-        //    i++;
-        //}
-        //printf("\n");
-        //printf("%x\n", frame);
-    //    //free(temp);
-    }
-
-    fclose(backingStore);
-
-    in = fopen(argv[3],"r");
-    while (fgets(num,128, in) != NULL) {
-        //temp = strdup(frame);
-        //name = strsep(&temp,",");
-        //priority = atoi(strsep(&temp,","));
-        //burst = atoi(strsep(&temp,","));
-        
-        //puts(num);
-        int number = atoi(num);
-        int physicalAdd = 
-        // add the task to the scheduler's list of tasks
-        printf("%d,", num);
-        
-
-        printf("%d", atoi(num));
-        //free(temp);
-    }
-
-    fclose(in);
-    
-
-
-    // invoke the scheduler
-    //schedule();
-
-    return 0;
-}
-

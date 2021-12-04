@@ -1,32 +1,43 @@
+#define LOGICAL_ADDRESS_BITS 128 // 32 bits since the addresses are 32 bits by definition
 #define PHASE_ONE_FRAMES 256 
-#define PHASE_ONE_FRAME_SIZE 256
-
+#define FRAME_SIZE 256
 #define PHASE_TWO_FRAMES 128 
-#define PHASE_TWO_FRAME_SIZE 128
-
-
-struct pageEntry {
-    char frameNumber;
+#define TLB_SIZE 16
+struct PageTable {
     int p; // page number m-n
     int d; // page offset n
-    char valid; // valid page = 1, invalid page = 0
-    char presence; // 1 = in memory, 0 = in BackingStore
-    char reference; // 1= accessed, 0 = not accessed
-};
-struct logicalAddress {
-    char p; // page number m-n
-    char d; // page offset n
-};
-
-struct pageTable{
-    struct pageEntry[];
-    
+    int virtualAddress;
+    int physicalAddress; // [p * PHASE_(ONE/TWO)] * d
+    int valid; // valid page = 1, invalid page = 0
+    int presence; // 1 = in memory, 0 = in BackingStore
+    int reference; // 1= accessed, 0 = not accessed
+    int lastUse;
 };
 
-struct process {
-    int pid;
+struct AddressTable {
+    int page; // page number m-n
+    int virtualAddress;
+    int offset; // page offset n
+};
+
+struct TLB {
     int pageNumber;
-    int offset;
-    struct pageTable pTable;
-
+    int frameNumber;
 };
+
+struct Memory{
+    char data[FRAME_SIZE];
+};
+
+
+
+static void innit_Memory(int frames);
+static void innit_PageTable(int frames);
+static void innit_TLB();
+void dectobin(int n);
+void getp(int n);
+void getd(int n);
+int PageTableAdd(int tempAddress);
+int PageTableGetIdx(int tempAddress);
+int TLBGetFrame(int pageNum);
+int TLBAddFrame(int idx, int pageNumber, int frameNum);
