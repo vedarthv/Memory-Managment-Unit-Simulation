@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         if(tempFrame > -1){
             TLB_HIT++;
             for(int j = 0; j < PageTable_SIZE; j++){
-                if(tempFrame == pageTable[j].p){
+                if(addresses[i].page == pageTable[j].p){
                     pageTable[j].lastUse = i + 1;
                 }
             }
@@ -75,28 +75,35 @@ int main(int argc, char *argv[]) {
             int idx = PageTableGetIdx(addresses[i].page);
             
             if(idx > -1) { // Data in page table, so now add it to TLB.
-                if (tlb_SIZE >= TLB_SIZE){
+                if (tlb_SIZE >= TLB_SIZE){ // TLB ADD CASE 1
                     //remove TLB FIFO 
                     for (int l = 1; l < TLB_SIZE; l++){
                         tlb[l-1].frameNumber = tlb[l].frameNumber;
                         tlb[l-1].pageNumber = tlb[l].pageNumber;
-                        if(l == TLB_SIZE - 1){
+                        if(l == TLB_SIZE - 1){ // add entry at the end
                             tlb[l].frameNumber = idx;
                             tlb[l].pageNumber = addresses[i].page;
                         }
                     }
-                    
                 }
-                else{   
+                else{   //TLB ADD CASE 2
                     tlb[tlb_SIZE].frameNumber = idx;
                     tlb[tlb_SIZE].pageNumber = addresses[i].page;
                     tlb_SIZE++;
                 }
-                
+                for(int j = 0; j < PageTable_SIZE; j++){
+                    if(addresses[i].page == pageTable[j].p){
+                        pageTable[j].lastUse = i + 1;
+                    }
+                }
+                PageTable_HIT++;
 
             }
-            else { // Data not in page table, need to ask BACKING STORE for Frame/data.
+            else { // Data not in page table, need to ask BACKING STORE for Frame/data. PAGEFAULT
+                // fetch data from backing store and add it to page table
+                // load back -> add page table
 
+                PageTable_MISS++;
             }
 
 
