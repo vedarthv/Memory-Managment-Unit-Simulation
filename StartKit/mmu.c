@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <stdio.h>
-#include <math.h>
 #include "mmu.h"
 
 static int PHASE_INDICATOR;
@@ -29,11 +28,13 @@ int main(int argc, char *argv[]) {
     FILE *backingStore;
     FILE *outputFile;
     
-
+    PHASE_INDICATOR = atoi(argv[1]);
     addressFile = fopen(argv[3],"r");
     backingStore = fopen(argv[2], "rb"); 
-    outputFile = fopen("output.csv", "w");
-    PHASE_INDICATOR = atoi(argv[1]);
+    char outputName[14];
+    snprintf(outputName, sizeof(outputName), "output%d.csv", PHASE_INDICATOR);
+    outputFile = fopen(outputName, "w");
+    
 
 
     innit_Memory(PHASE_INDICATOR);
@@ -52,7 +53,6 @@ int main(int argc, char *argv[]) {
     }
 
     for(int i = 0; i < AddressTable_SIZE; i++){
-        signed char backstoretemp[FRAME_SIZE];
         // 1. Search TLB
         // 2. IF TLB miss, ask PAGETABLE
         // 3. Print result
