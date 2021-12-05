@@ -1,8 +1,7 @@
-#define LOGICAL_ADDRESS_BITS 128 // 32 bits since the addresses are 32 bits by definition
-#define PHASE_ONE_FRAMES 256 
+#define LOGICAL_ADDRESS_BITS 128 
 #define FRAME_SIZE 256
-#define PHASE_TWO_FRAMES 128 
 #define TLB_SIZE 16
+#define ADDRESS_TABLE_SIZE 9999
 struct PageTable {
     int p; // page number m-n
     int d; // page offset n

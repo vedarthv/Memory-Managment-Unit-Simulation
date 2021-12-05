@@ -5,7 +5,7 @@
 #include "mmu.h"
 
 static int PHASE_INDICATOR;
-static struct AddressTable addresses[10000];
+static struct AddressTable addresses[ADDRESS_TABLE_SIZE];
 static struct PageTable pageTable[FRAME_SIZE];
 static int AddressTable_SIZE;
 static int PageTable_SIZE;
@@ -27,12 +27,12 @@ int main(int argc, char *argv[]) {
     
     FILE *addressFile;
     FILE *backingStore;
-    //FILE *outputFile;
+    FILE *outputFile;
     
 
     addressFile = fopen(argv[3],"r");
     backingStore = fopen(argv[2], "rb"); 
-    //outputFile = fopen("output.csv", "w");
+    outputFile = fopen("output.csv", "w");
     PHASE_INDICATOR = atoi(argv[1]);
 
 
@@ -50,9 +50,6 @@ int main(int argc, char *argv[]) {
         AddressTableAdd(tempAddress);
         //PageTableAdd(tempAddress);
     }
-
-    printf("---------------------------\n");
-    printf("Size: %d\n", PageTable_SIZE);
 
     for(int i = 0; i < AddressTable_SIZE; i++){
         signed char backstoretemp[FRAME_SIZE];
@@ -99,12 +96,14 @@ int main(int argc, char *argv[]) {
             }
         }
         //printf("Out Frame: %d\n", outF);
-        printf("%d,%d,%d\n", addresses[i].virtualAddress, outF * FRAME_SIZE + addresses[i].offset, memory[outF].data[addresses[i].offset]);
+        fprintf(outputFile, "%d,%d,%d\n", addresses[i].virtualAddress, outF * FRAME_SIZE + addresses[i].offset, memory[outF].data[addresses[i].offset]);
     }
+    fprintf(outputFile, "Page Faults Rate, %0.2f%%,\n", ((double)(PageTable_MISS * 1.0) / (double)(AddressTable_SIZE * 1.0)) * 100.0);
+    fprintf(outputFile, "TLB Hits Rate, %0.2f%%,", ((double) TLB_HIT * 1.0 /  (double) AddressTable_SIZE * 1.0) * 100.0);
 
     fclose(addressFile);
     fclose(backingStore);
-    //fclose(outputFile);
+    fclose(outputFile);
     
     return 0;
 }
