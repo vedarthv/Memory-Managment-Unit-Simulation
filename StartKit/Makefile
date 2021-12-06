@@ -8,7 +8,8 @@ CFLAGS=-Wall
 clean:
 	rm -rf *.o
 	rm -rf mmu
-	rm -rf output.csv
+	rm -rf output128.csv
+	rm -rf output256.csv
 	
 mmu: mmu.o
 	$(CC) $(CFLAGS) -o mmu mmu.o
