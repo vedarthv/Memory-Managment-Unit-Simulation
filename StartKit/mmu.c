@@ -14,12 +14,8 @@ static struct TLB tlb [TLB_SIZE]; // TLB = [Page Number][Frame Number]
 static int tlb_SIZE;
 
 // Statistic Variables
-static int TLB_MISS;
 static int TLB_HIT;
 static int PageTable_MISS;
-static int PageTable_HIT;
-
-
 
 
 int main(int argc, char *argv[]) {
@@ -67,7 +63,6 @@ int main(int argc, char *argv[]) {
             }
         }
         else { // TBL miss, use search table
-            TLB_MISS++;
             // Search page table
             int idx = PageTableGetFrame(addresses[i].page);
             outF = idx;
@@ -78,7 +73,6 @@ int main(int argc, char *argv[]) {
                         pageTable[j].lastUse = i + 1;
                     }
                 }
-                PageTable_HIT++;
             }
             else { // Data not in page table, need to ask BACKING STORE for Frame/data. PAGEFAULT
                 // fetch data from backing store and add it to page table
@@ -89,13 +83,10 @@ int main(int argc, char *argv[]) {
                 fseek(backingStore, addresses[i].page * FRAME_SIZE, SEEK_SET);
                 fread(data, sizeof(signed char), FRAME_SIZE, backingStore);
                 //2. add data into the page table
-                //tempFrame = 
                 // PAGE TABLE ADD and also adds to TLB
                 outF = PageTableAdd(addresses[i].page, addresses[i].offset, i, data);
-        
             }
         }
-        //printf("Out Frame: %d\n", outF);
         fprintf(outputFile, "%d,%d,%d\n", addresses[i].virtualAddress, outF * FRAME_SIZE + addresses[i].offset, memory[outF].data[addresses[i].offset]);
     }
     fprintf(outputFile, "Page Faults Rate, %0.2f%%,\n", ((double)(PageTable_MISS * 1.0) / (double)(AddressTable_SIZE * 1.0)) * 100.0);
@@ -156,7 +147,7 @@ int PageTableAdd(int pageNumber, int offset, int count, signed char diskData[]){
         for(int stridx = 0; stridx < FRAME_SIZE; stridx++){
             memory[PageTable_SIZE].data[stridx] = diskData[stridx];
         }
-        //strncpy(memory[PageTable_SIZE].data, strdup(diskData), FRAME_SIZE);
+    
         TLBAdd(pageNumber, PageTable_SIZE);
         PageTable_SIZE++;
         Memory_SIZE++;
@@ -174,7 +165,7 @@ int PageTableAdd(int pageNumber, int offset, int count, signed char diskData[]){
         pageTable[lastMin].p = pageNumber;
         pageTable[lastMin].d = offset;
         pageTable[lastMin].lastUse = count + 1;
-        //strncpy(memory[lastMin].data, strdup(diskData), FRAME_SIZE);
+        
         for (int j = 0; j < FRAME_SIZE; j++){
             memory[lastMin].data[j] = diskData[j];
         }
@@ -239,6 +230,7 @@ int AddressTableAdd(int tempAddress){
     AddressTable_SIZE++;
     return 1; 
 }
+
 void dectobin(int n){
     int c,k;
     for (c = 15; c >= 0; c--){ // c value was originally 31, but we will be using 15, 2^16 = 65536, 8+8 bits.
